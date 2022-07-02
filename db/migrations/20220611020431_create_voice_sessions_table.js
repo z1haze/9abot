@@ -10,7 +10,6 @@ exports.up = function up(knex) {
     table.string('guild_id');
     table.timestamp('time_join');
     table.timestamp('time_leave');
-    table.timestamps(true, true);
 
     table.foreign(['user_id', 'guild_id'])
       .references(['user_id', 'guild_id'])

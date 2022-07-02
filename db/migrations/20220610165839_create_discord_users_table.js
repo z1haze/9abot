@@ -12,7 +12,6 @@ exports.up = function up(knex) {
     table.boolean('is_bot').defaultTo(false);
     table.timestamp('joined_timestamp');
     table.timestamp('quit_timestamp').nullable();
-    table.timestamps(true, true);
 
     table.primary(['user_id', 'guild_id']);
   });

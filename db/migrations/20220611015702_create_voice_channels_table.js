@@ -7,7 +7,6 @@ exports.up = function up(knex) {
     table.string('voice_channel_id').primary();
     table.string('voice_channel_name');
     table.string('guild_id');
-    table.timestamps(true, true);
   });
 };
 
