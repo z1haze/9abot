@@ -3,12 +3,14 @@
  * @returns {Knex.SchemaBuilder}
  */
 exports.up = function up(knex) {
-  return knex.schema.createTable('discord_voice_channels', (table) => {
+  return knex.schema.createTable('discord_roles', (table) => {
     table.string('guild_id');
-    table.string('voice_channel_id');
-    table.primary(['guild_id', 'voice_channel_id']);
+    table.string('role_id');
+    table.primary(['guild_id', 'role_id']);
 
-    table.string('voice_channel_name');
+    table.string('name');
+    table.string('color', 7);
+    table.integer('position');
   });
 };
 
@@ -17,5 +19,5 @@ exports.up = function up(knex) {
  * @returns {Knex.SchemaBuilder}
  */
 exports.down = function down(knex) {
-  return knex.schema.dropTable('discord_voice_channels');
+  return knex.schema.dropTable('discord_roles');
 };

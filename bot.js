@@ -2,7 +2,12 @@ require('dotenv').config();
 
 const knex = require('./db/knex');
 const { client } = require('./constants');
-const { syncUsers, addUser } = require('./lib/users');
+
+const {
+  addRole, updateRole, deleteRole, syncRoles,
+} = require('./lib/roles');
+
+const { syncUsers, addUser, syncUserRoles } = require('./lib/users');
 const { handleJoinVoice, handleLeaveVoice } = require('./lib/voice');
 
 const guildIds = process.env.GUILD_IDS.split(',');
@@ -11,25 +16,32 @@ client.on('ready', async () => {
   // eslint-disable-next-line no-console
   console.log(`Logged in as ${client.user.tag}!`);
 
-  let promises = [];
+  let queue = [];
 
-  // update discord members cache
+  // queue discord cache updates
   guildIds.forEach((guildId) => {
     const guild = client.guilds.cache.get(guildId);
-    promises.push(guild.members.fetch());
+
+    queue.push(guild.roles.fetch());
+    queue.push(guild.members.fetch());
   });
 
-  await Promise.all(promises);
+  // await discord cache updates
+  await Promise.all(queue);
 
-  promises = [];
+  // clear queue
+  queue = [];
 
-  // sync users for each guild
+  // queue syncing roles and users with our database
   guildIds.forEach((guildId) => {
     const guild = client.guilds.cache.get(guildId);
-    promises.push(syncUsers(guild));
+
+    queue.push(syncRoles(guild));
+    queue.push(syncUsers(guild));
   });
 
-  await Promise.all(promises);
+  // await database sync
+  await Promise.all(queue);
 });
 
 /**
@@ -66,22 +78,55 @@ client.on('guildMemberAdd', async (guildMember) => {
 /**
  * Handle user updates
  */
-client.on('guildMemberUpdate', async (oldGuildMember, newGuildMember) => {
+client.on('userUpdate', async (oldUser, newUser) => {
   const changes = {};
 
   // username change
-  if (oldGuildMember.user.username !== newGuildMember.user.username) {
-    changes.username = newGuildMember.user.username;
+  if (oldUser.username !== newUser.username) {
+    changes.username = newUser.username;
   }
 
   // discriminator change
-  if (oldGuildMember.user.discriminator !== newGuildMember.user.discriminator) {
-    changes.discriminator = newGuildMember.user.discriminator;
+  if (oldUser.discriminator !== newUser.discriminator) {
+    changes.discriminator = newUser.discriminator;
   }
+
+  // avatar change
+  if (oldUser.displayAvatarURL() !== newUser.displayAvatarURL()) {
+    changes.avatar_url = newUser.displayAvatarURL();
+  }
+
+  // only update changes we care to track
+  if (Object.keys(changes).length > 0) {
+    await knex('discord_users').update(changes)
+      .where('user_id', newUser.id);
+
+    // eslint-disable-next-line no-console
+    console.log(`${oldUser.username} was updated.`);
+  }
+});
+
+/**
+ * Handle guild member updates
+ */
+client.on('guildMemberUpdate', async (oldGuildMember, newGuildMember) => {
+  const changes = {};
 
   // nickname change
   if (oldGuildMember.nickname !== newGuildMember.nickname) {
     changes.nickname = newGuildMember.nickname;
+  }
+
+  // role assignment change
+  if (oldGuildMember.roles.cache.size !== newGuildMember.roles.cache.size) {
+    const dbUser = (await knex('discord_users')
+      .where('user_id', newGuildMember.id)
+      .andWhere('guild_id', newGuildMember.guild.id)
+      .limit(1))[0];
+
+    await syncUserRoles(newGuildMember, dbUser);
+    // eslint-disable-next-line no-console
+    console.log(`${newGuildMember.displayName}'s roles were updated`);
   }
 
   // only update changes we care to track
@@ -108,12 +153,34 @@ client.on('guildMemberRemove', async (guildMember) => {
     .andWhere('guild_id', guildMember.guild.id);
 });
 
-client.on('interactionCreate', async (interaction) => {
-  if (!interaction.isCommand()) return;
+/**
+ * Handle adding new roles to the database
+ */
+client.on('roleCreate', async (role) => {
+  // eslint-disable-next-line no-console
+  console.log(`${role.name} (${role.id}) was created.`);
 
-  if (interaction.commandName === 'ping') {
-    await interaction.reply('Pong!');
-  }
+  await addRole(role, role.guild.id);
+});
+
+/**
+ * Handle updating a role in the database
+ */
+client.on('roleUpdate', async (oldRole, newRole) => {
+  // eslint-disable-next-line no-console
+  console.log(`Role ${newRole.name} (${oldRole.id}) was updated.`);
+
+  await updateRole(newRole);
+});
+
+/**
+ * Handle deleting a role from the database
+ */
+client.on('roleDelete', async (role) => {
+  // eslint-disable-next-line no-console
+  console.log(`Role ${role.name} (${role.id}) was deleted.`);
+
+  await deleteRole(role);
 });
 
 /**
