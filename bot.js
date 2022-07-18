@@ -9,8 +9,7 @@ const {
 
 const { syncUsers, addUser, syncUserRoles } = require('./lib/users');
 const { handleJoinVoice, handleLeaveVoice } = require('./lib/voice');
-
-const guildIds = process.env.GUILD_IDS.split(',');
+const { addMessage } = require('./lib/messages');
 
 client.on('ready', async () => {
   // eslint-disable-next-line no-console
@@ -18,10 +17,10 @@ client.on('ready', async () => {
 
   let queue = [];
 
-  // queue discord cache updates
-  guildIds.forEach((guildId) => {
-    const guild = client.guilds.cache.get(guildId);
+  await client.guilds.fetch();
 
+  // queue discord cache updates
+  client.guilds.cache.each((guild) => {
     queue.push(guild.roles.fetch());
     queue.push(guild.members.fetch());
   });
@@ -33,14 +32,28 @@ client.on('ready', async () => {
   queue = [];
 
   // queue syncing roles and users with our database
-  guildIds.forEach((guildId) => {
-    const guild = client.guilds.cache.get(guildId);
-
+  client.guilds.cache.each((guild) => {
     queue.push(syncRoles(guild));
     queue.push(syncUsers(guild));
   });
 
   // await database sync
+  await Promise.all(queue);
+});
+
+client.on('guildCreate', async (guild) => {
+  let queue = [];
+
+  queue.push(guild.roles.fetch());
+  queue.push(guild.members.fetch());
+
+  await Promise.all(queue);
+
+  queue = [];
+
+  queue.push(syncRoles(guild));
+  queue.push(syncUsers(guild));
+
   await Promise.all(queue);
 });
 
@@ -181,6 +194,13 @@ client.on('roleDelete', async (role) => {
   console.log(`Role ${role.name} (${role.id}) was deleted.`);
 
   await deleteRole(role);
+});
+
+/**
+ * Handle adding messages to the database
+ */
+client.on('messageCreate', async (message) => {
+  await addMessage(message);
 });
 
 /**
