@@ -5,7 +5,7 @@
 exports.up = function up(knex) {
   return knex.schema.createTable('discord_voice_sessions', (table) => {
     table.string('guild_id');
-    table.string('voice_session_id');
+    table.increments('voice_session_id');
     table.primary(['guild_id', 'voice_session_id']);
 
     table.string('user_id');
