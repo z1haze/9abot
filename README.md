@@ -8,4 +8,5 @@ What It Does
 
 - [x] Sync current and past guild members to external database
 - [x] Track voice session activity for guild members
-- [ ] Manage new member vote related tasks
+- [x] Sync channels to external db (both text and voice)
+- [x] Track guild messages (not message content)

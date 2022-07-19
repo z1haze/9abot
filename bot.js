@@ -3,14 +3,15 @@ require('dotenv').config();
 const knex = require('./db/knex');
 const { client } = require('./constants');
 
-const {
-  addRole, updateRole, deleteRole, syncRoles,
-} = require('./lib/roles');
-
+const { addRole, updateRole, deleteRole, syncRoles } = require('./lib/roles');
 const { syncUsers, addUser, syncUserRoles } = require('./lib/users');
 const { handleJoinVoice, handleLeaveVoice } = require('./lib/voice');
-const { addMessage } = require('./lib/messages');
+const { addMessage, deleteMessage } = require('./lib/messages');
+const { addChannel, syncChannels, updateChannel, deleteChannel } = require('./lib/channels');
 
+/**
+ * Handle startup of bot
+ */
 client.on('ready', async () => {
   // eslint-disable-next-line no-console
   console.log(`Logged in as ${client.user.tag}!`);
@@ -23,6 +24,7 @@ client.on('ready', async () => {
   client.guilds.cache.each((guild) => {
     queue.push(guild.roles.fetch());
     queue.push(guild.members.fetch());
+    queue.push(guild.channels.fetch());
   });
 
   // await discord cache updates
@@ -31,21 +33,26 @@ client.on('ready', async () => {
   // clear queue
   queue = [];
 
-  // queue syncing roles and users with our database
+  // queue syncing roles, roles, and channels with our database
   client.guilds.cache.each((guild) => {
     queue.push(syncRoles(guild));
     queue.push(syncUsers(guild));
+    queue.push(syncChannels(guild));
   });
 
   // await database sync
   await Promise.all(queue);
 });
 
+/**
+ * When a new guild is added to the bot
+ */
 client.on('guildCreate', async (guild) => {
   let queue = [];
 
   queue.push(guild.roles.fetch());
   queue.push(guild.members.fetch());
+  queue.push(guild.channels.fetch());
 
   await Promise.all(queue);
 
@@ -53,8 +60,36 @@ client.on('guildCreate', async (guild) => {
 
   queue.push(syncRoles(guild));
   queue.push(syncUsers(guild));
+  queue.push(syncChannels(guild));
 
   await Promise.all(queue);
+});
+
+/**
+ * When a channel is created
+ */
+client.on('channelCreate', async (channel) => {
+  if (channel.isText() || channel.isVoice()) {
+    await addChannel(channel);
+  }
+});
+
+/**
+ * When a channel is updated
+ */
+client.on('channelUpdate', async (channel) => {
+  if (channel.isText() || channel.isVoice()) {
+    await updateChannel(channel);
+  }
+});
+
+/**
+ * When a channel is deleted
+ */
+client.on('channelDelete', async (channel) => {
+  if (channel.isText() || channel.isVoice()) {
+    await deleteChannel(channel);
+  }
 });
 
 /**
@@ -204,6 +239,13 @@ client.on('messageCreate', async (message) => {
 });
 
 /**
+ * Handle adding messages to the database
+ */
+client.on('messageDelete', async (message) => {
+  await deleteMessage(message);
+});
+
+/**
  * Collect voice sessions
  */
 client.on('voiceStateUpdate', async (before, after) => {
@@ -212,11 +254,11 @@ client.on('voiceStateUpdate', async (before, after) => {
   }
 
   if (before.channelId) {
-    await handleLeaveVoice(before.member, before.channel);
+    await handleLeaveVoice(before);
   }
 
   if (after.channelId) {
-    await handleJoinVoice(after.member, after.channel);
+    await handleJoinVoice(after);
   }
 });
 

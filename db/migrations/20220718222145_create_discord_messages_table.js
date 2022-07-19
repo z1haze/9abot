@@ -7,8 +7,13 @@ exports.up = function up(knex) {
     table.string('guild_id');
     table.string('message_id');
     table.string('user_id');
-    table.string('text_channel_id');
+    table.string('channel_id');
     table.timestamp('time_sent');
+
+    table.foreign(['guild_id', 'channel_id'])
+      .references(['guild_id', 'channel_id'])
+      .inTable('discord_channels')
+      .onDelete('CASCADE');
   });
 };
 
