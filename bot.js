@@ -141,7 +141,7 @@ client.on('userUpdate', async (oldUser, newUser) => {
       .where('user_id', newUser.id);
 
     // eslint-disable-next-line no-console
-    console.log(`${oldUser.username} was updated.`);
+    console.log(`${oldUser.username} user was updated.`);
   }
 });
 
@@ -175,7 +175,7 @@ client.on('guildMemberUpdate', async (oldGuildMember, newGuildMember) => {
       .andWhere('guild_id', newGuildMember.guild.id);
 
     // eslint-disable-next-line no-console
-    console.log(`${oldGuildMember.displayName} was updated.`);
+    console.log(`${oldGuildMember.displayName} guild member was updated.`);
   }
 });
 
