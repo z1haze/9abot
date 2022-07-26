@@ -4,7 +4,7 @@ const knex = require('./db/knex');
 const { client } = require('./constants');
 
 const { addRole, updateRole, deleteRole, syncRoles } = require('./lib/roles');
-const { syncUsers, addUser, updateUser, syncUserRoles } = require('./lib/users');
+const { syncUsers, addUser, updateUser, deleteUser, syncUserRoles } = require('./lib/users');
 const { handleJoinVoice, handleLeaveVoice } = require('./lib/voice');
 const { addMessage, deleteMessage } = require('./lib/messages');
 const { addChannel, syncChannels, updateChannel, deleteChannel } = require('./lib/channels');
@@ -186,10 +186,7 @@ client.on('guildMemberRemove', async (guildMember) => {
   // eslint-disable-next-line no-console
   console.log(`${guildMember.displayName} left the server`);
 
-  await knex('discord_users')
-    .update({ quit_timestamp: new Date().toISOString() })
-    .where('user_id', guildMember.user.id)
-    .andWhere('guild_id', guildMember.guild.id);
+  await deleteUser(guildMember);
 });
 
 /**
