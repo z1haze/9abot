@@ -4,7 +4,7 @@ const knex = require('./db/knex');
 const { client } = require('./constants');
 
 const { addRole, updateRole, deleteRole, syncRoles } = require('./lib/roles');
-const { syncUsers, addUser, syncUserRoles } = require('./lib/users');
+const { syncUsers, addUser, updateUser, syncUserRoles } = require('./lib/users');
 const { handleJoinVoice, handleLeaveVoice } = require('./lib/voice');
 const { addMessage, deleteMessage } = require('./lib/messages');
 const { addChannel, syncChannels, updateChannel, deleteChannel } = require('./lib/channels');
@@ -107,16 +107,7 @@ client.on('guildMemberAdd', async (guildMember) => {
 
   if (existingUser.length) {
     // handle a user who joins who has already joined in the past
-    await knex('discord_users')
-      .where('user_id', guildMember.user.id)
-      .andWhere('guild_id', guildMember.guild.id)
-      .update({
-        username: guildMember.user.username,
-        discriminator: guildMember.user.discriminator,
-        nickname: guildMember.nickname,
-        quit_timestamp: null,
-        is_bot: guildMember.user.bot,
-      });
+    await updateUser(guildMember);
   } else {
     // add a net new user
     await addUser(guildMember, guildMember.guild.id);
