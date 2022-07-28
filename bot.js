@@ -2,12 +2,15 @@ require('dotenv').config();
 
 const knex = require('./db/knex');
 const { client } = require('./constants');
+const { init: initSentry } = require('./log/sentry');
 
 const { addRole, updateRole, deleteRole, syncRoles } = require('./lib/roles');
 const { syncUsers, addUser, updateUser, deleteUser, syncUserRoles } = require('./lib/users');
 const { handleJoinVoice, handleLeaveVoice } = require('./lib/voice');
 const { addMessage, deleteMessage } = require('./lib/messages');
 const { addChannel, syncChannels, updateChannel, deleteChannel } = require('./lib/channels');
+
+initSentry();
 
 /**
  * Handle startup of bot
