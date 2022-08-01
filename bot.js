@@ -69,6 +69,14 @@ client.on('guildCreate', async (guild) => {
 });
 
 /**
+ * When the client is removed from a guild
+ */
+client.on('guildDelete', (guild) => {
+  // eslint-disable-next-line no-console
+  console.log(`Guild (${guild.id}) removed client.`);
+});
+
+/**
  * When a channel is created
  */
 client.on('channelCreate', async (channel) => {
