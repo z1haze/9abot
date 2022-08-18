@@ -7,13 +7,5 @@ module.exports = {
       tracesSampleRate: 1.0,
       environment: process.env.NODE_ENV,
     });
-
-    process.on('unhandledRejection', (e) => {
-      Sentry.captureException(e);
-    });
-
-    process.on('uncaughtException', (e) => {
-      Sentry.captureException(e);
-    });
   },
 };
