@@ -4,11 +4,13 @@ const knex = require('./db/knex');
 const { client } = require('./constants');
 const { init: initSentry } = require('./log/sentry');
 
+const dbCache = require('./db/cache');
 const { addRole, updateRole, deleteRole, syncRoles } = require('./lib/roles');
 const { syncUsers, addUser, updateUser, deleteUser, syncUserRoles } = require('./lib/users');
 const { handleJoinVoice, handleLeaveVoice } = require('./lib/voice');
 const { addMessage, deleteMessage } = require('./lib/messages');
 const { addChannel, syncChannels, updateChannel, deleteChannel } = require('./lib/channels');
+const { syncStats } = require('./lib/util');
 
 initSentry();
 
@@ -19,6 +21,8 @@ client.on('ready', async () => {
   // eslint-disable-next-line no-console
   console.log(`Logged in as ${client.user.tag}!`);
 
+  dbCache.me = client.user;
+
   let queue = [];
 
   await client.guilds.fetch();
@@ -26,7 +30,7 @@ client.on('ready', async () => {
   // queue discord cache updates
   client.guilds.cache.each((guild) => {
     queue.push(guild.roles.fetch());
-    queue.push(guild.members.fetch());
+    queue.push(guild.members.fetch({ withPresences: true }));
     queue.push(guild.channels.fetch());
   });
 
@@ -36,11 +40,17 @@ client.on('ready', async () => {
   // clear queue
   queue = [];
 
+  // eslint-disable-next-line no-eval
+  const statsUpdateInterval = eval(process.env.STATS_UPDATE_INTERVAL);
+
   // queue syncing roles, roles, and channels with our database
   client.guilds.cache.each((guild) => {
     queue.push(syncRoles(guild));
     queue.push(syncUsers(guild));
     queue.push(syncChannels(guild));
+    queue.push(syncStats(guild));
+
+    setInterval(syncStats, statsUpdateInterval, guild);
   });
 
   // await database sync

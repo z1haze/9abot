@@ -10,3 +10,4 @@ What It Does
 - [x] Track voice session activity for guild members
 - [x] Sync channels to external db (both text and voice)
 - [x] Track guild messages (not message content)
+- [x] Display Guild stats for members/online members

@@ -4,6 +4,8 @@ const cache = {
   channels: new Set(),
   users: new Map(),
   roles: new Set(),
+  settings: new Map(),
+  me: null, // client user (bot)
 };
 
 module.exports = cache;
