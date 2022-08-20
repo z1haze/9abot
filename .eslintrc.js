@@ -8,5 +8,7 @@ module.exports = {
   },
   rules: {
     'object-curly-newline': 'off',
+    'no-param-reassign': 'off',
+    'max-len': 'off',
   },
 };

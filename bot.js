@@ -1,3 +1,5 @@
+const { ChannelType } = require('discord.js');
+
 require('dotenv').config();
 
 const knex = require('./db/knex');
@@ -40,9 +42,6 @@ client.on('ready', async () => {
   // clear queue
   queue = [];
 
-  // eslint-disable-next-line no-eval
-  const statsUpdateInterval = eval(process.env.STATS_UPDATE_INTERVAL);
-
   // queue syncing roles, roles, and channels with our database
   client.guilds.cache.each((guild) => {
     queue.push(syncRoles(guild));
@@ -50,7 +49,8 @@ client.on('ready', async () => {
     queue.push(syncChannels(guild));
     queue.push(syncStats(guild));
 
-    setInterval(syncStats, statsUpdateInterval, guild);
+    // eslint-disable-next-line no-eval
+    dbCache.statIntervals.set(guild.id, setInterval(syncStats, eval(process.env.STATS_UPDATE_INTERVAL), guild));
   });
 
   // await database sync
@@ -75,6 +75,9 @@ client.on('guildCreate', async (guild) => {
   queue.push(syncUsers(guild));
   queue.push(syncChannels(guild));
 
+  // eslint-disable-next-line no-eval
+  dbCache.statIntervals.set(guild.id, setInterval(syncStats, eval(process.env.STATS_UPDATE_INTERVAL), guild));
+
   await Promise.all(queue);
 });
 
@@ -84,13 +87,15 @@ client.on('guildCreate', async (guild) => {
 client.on('guildDelete', (guild) => {
   // eslint-disable-next-line no-console
   console.log(`Guild (${guild.id}) removed client.`);
+
+  clearInterval(dbCache.statIntervals.get(guild.id));
 });
 
 /**
  * When a channel is created
  */
 client.on('channelCreate', async (channel) => {
-  if (channel.isText() || channel.isVoice()) {
+  if (channel.type === ChannelType.GuildText || channel.type === ChannelType.GuildVoice) {
     await addChannel(channel);
   }
 });
@@ -99,7 +104,7 @@ client.on('channelCreate', async (channel) => {
  * When a channel is updated
  */
 client.on('channelUpdate', async (channel) => {
-  if (channel.isText() || channel.isVoice()) {
+  if (channel.type === ChannelType.GuildText || channel.type === ChannelType.GuildVoice) {
     await updateChannel(channel);
   }
 });
@@ -108,7 +113,7 @@ client.on('channelUpdate', async (channel) => {
  * When a channel is deleted
  */
 client.on('channelDelete', async (channel) => {
-  if (channel.isText() || channel.isVoice()) {
+  if (channel.type === ChannelType.GuildText || channel.type === ChannelType.GuildVoice) {
     await deleteChannel(channel);
   }
 });

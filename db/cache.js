@@ -6,6 +6,7 @@ const cache = {
   roles: new Set(),
   settings: new Map(),
   me: null, // client user (bot)
+  statIntervals: new Map(),
 };
 
 module.exports = cache;
