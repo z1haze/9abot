@@ -3,10 +3,10 @@
  * @returns {Knex.SchemaBuilder}
  */
 exports.up = function up(knex) {
-  return knex.schema.createTable('settings', (table) => {
-    table.string('guild_id').primary();
-    table.json('value');
-  });
+    return knex.schema.createTable('settings', (table) => {
+        table.string('guild_id').primary();
+        table.json('value');
+    });
 };
 
 /**
@@ -14,5 +14,5 @@ exports.up = function up(knex) {
  * @returns {Knex.SchemaBuilder}
  */
 exports.down = function down(knex) {
-  return knex.schema.dropTable('settings');
+    return knex.schema.dropTable('settings');
 };

@@ -70,12 +70,16 @@ client.on('ready', async () => {
 /**
  * When an invitation is created
  */
-client.on('inviteCreate', (invite) => invites.get(invite.guild.id).set(invite.code, invite.uses));
+client.on('inviteCreate', (invite) => {
+    invites.get(invite.guild.id).set(invite.code, invite.uses);
+});
 
 /**
  * When an invitation is deleted
  */
-client.on('inviteDelete', (invite) => invites.get(invite.guild.id).delete(invite.code));
+client.on('inviteDelete', (invite) => {
+    invites.get(invite.guild.id).delete(invite.code);
+});
 
 /**
  * When a new guild is added to the bot
@@ -180,10 +184,13 @@ client.on('guildMemberAdd', async (guildMember) => {
 
         // find the invite that was just incremented
         const invite = newInvites.find((invite) => invite.uses > oldInvites.get(invite.code));
-        const inviter = await client.users.fetch(invite.inviter.id);
-        const logChannel = guildMember.guild.channels.cache.find(channel => channel.id === welcomeChannelId);
 
-        await logChannel.send(`${guildMember.user.username} was invited by ${inviter} using invite code **${invite.code}**.`);
+        if (invite) {
+            const inviter = await client.users.fetch(invite.inviter.id);
+            const logChannel = guildMember.guild.channels.cache.find(channel => channel.id === welcomeChannelId);
+
+            await logChannel.send(`${guildMember.user.username} was invited by ${inviter} using invite code **${invite.code}**.`);
+        }
     }
 });
 
